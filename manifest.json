@@ -1,0 +1,85 @@
+{
+  "name": "Cineflix — Movies & TV",
+  "short_name": "Cineflix",
+  "description": "Discover movies and TV shows, save your watchlist, and explore AI-powered entertainment features.",
+  "start_url": "./#home",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#0f192f",
+  "theme_color": "#0f192f",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "entertainment",
+    "movies",
+    "tv"
+  ],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Discover",
+      "short_name": "Discover",
+      "description": "Browse movies and TV shows",
+      "url": "./#discover",
+      "icons": [
+        {
+          "src": "assets/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "short_name": "Search",
+      "description": "Search movies and TV shows",
+      "url": "./#search",
+      "icons": [
+        {
+          "src": "assets/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Library",
+      "short_name": "Library",
+      "description": "Open your saved watchlist",
+      "url": "./#library",
+      "icons": [
+        {
+          "src": "assets/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
+}
