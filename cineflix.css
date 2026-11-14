@@ -374,23 +374,6 @@ body{font-size:2.2rem}
 .poster.skeleton{background:linear-gradient(100deg,var(--card) 30%,#1d2d4f 50%,var(--card) 70%);background-size:200% 100%}
 .sec .sa{cursor:pointer}
 
-/* splash */
-#splash{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:radial-gradient(ellipse at 50% 38%,#1d3166 0,#101b3c 45%,#070d1f 100%);transition:opacity .7s ease,visibility .7s;overflow:hidden;color:#fff}
-#splash.hide{opacity:0;visibility:hidden}
-.sp-glow{position:absolute;left:50%;top:44%;width:70vmin;height:70vmin;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(91,120,255,.38),rgba(91,120,255,0) 65%);filter:blur(10px);animation:spPulse 3.2s ease-in-out infinite}
-.sp-glow.g2{width:46vmin;height:46vmin;top:46%;background:radial-gradient(circle,rgba(255,61,129,.3),rgba(255,61,129,0) 65%);animation-delay:1.2s}
-.sp-icon{position:relative;width:clamp(120px,28vmin,210px);height:clamp(120px,28vmin,210px);filter:drop-shadow(0 18px 34px rgba(60,70,220,.55)) drop-shadow(0 0 30px rgba(255,61,129,.25));animation:spPop 1.2s cubic-bezier(.2,1.3,.4,1) both,spFloat 3.4s ease-in-out 1.3s infinite}
-.sp-name{position:relative;margin-top:clamp(26px,5vmin,44px);font-size:clamp(30px,7.4vmin,58px);font-weight:600;letter-spacing:.34em;padding-left:.34em;animation:spName 1.4s .6s cubic-bezier(.2,.8,.2,1) both}
-.sp-tag{position:relative;margin-top:14px;font-size:clamp(11px,2.2vmin,15px);letter-spacing:.32em;color:#9db0e4;animation:spFade 1.2s 1.6s both}
-.sp-bar{position:absolute;bottom:max(9vh,50px);width:clamp(150px,42vw,280px);height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;animation:spFade .8s 1s both}
-.sp-bar i{display:block;height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,#5b78ff,#ff3d81,#ff8a3d);box-shadow:0 0 14px rgba(255,80,130,.6);animation:spFill 8s linear forwards}
-@keyframes spPop{0%{transform:scale(.3) rotate(-14deg);opacity:0}60%{transform:scale(1.08) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
-@keyframes spFloat{50%{transform:translateY(-10px)}}
-@keyframes spName{0%{opacity:0;letter-spacing:.9em;transform:translateY(10px)}100%{opacity:1;letter-spacing:.34em;transform:none}}
-@keyframes spFade{from{opacity:0}to{opacity:1}}
-@keyframes spFill{to{width:100%}}
-@keyframes spPulse{50%{transform:translate(-50%,-50%) scale(1.15);opacity:.8}}
-
 /* auth */
 .auth-ov{padding:2rem;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .auth-card{position:relative;width:min(100%,460px);max-height:calc(100vh - 4rem);overflow:auto;padding:4.4rem 3.4rem 3.6rem;border-radius:3.6rem;background:linear-gradient(180deg,var(--card),var(--card2));box-shadow:var(--raised),0 0 0 .1rem rgba(255,255,255,.05);scrollbar-width:none}

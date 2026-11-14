@@ -450,6 +450,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('hashchange', route);
   route();
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => { });
+    // when an updated service worker takes over, reload once so the newest files are used
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!sessionStorage.getItem('cf-reloaded')) { sessionStorage.setItem('cf-reloaded', '1'); location.reload(); } });
 });
 
 // ---------- splash screen: 8 seconds ----------
