@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0f192f">
 <meta name="description" content="Cineflix — discover movies and TV shows, build your watchlist and keep watching.">
 <title>Cineflix</title>
+<meta property="og:site_name" content="Cineflix"><meta property="og:title" content="Cineflix"><meta property="og:description" content="Discover movies and TV shows, build your watchlist and keep watching."><meta property="og:image" content="assets/icon-512.png">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="assets/favicon-48.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -16,16 +17,24 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body data-theme="dark">
+<div id="splash" aria-hidden="true">
+  <div class="sp-glow"></div><div class="sp-glow g2"></div>
+  <svg class="sp-icon" viewBox="0 0 120 120"><use href="#logo-icon"/></svg>
+  <div class="sp-name">CINE<span class="flix">FLIX</span></div>
+  <div class="sp-tag">MOVIES &bull; TV SHOWS &bull; UNLIMITED</div>
+  <div class="sp-bar"><i></i></div>
+</div>
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="gB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a90ff"/><stop offset="1" stop-color="#3b54e6"/></linearGradient>
   <linearGradient id="gB2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a4b2ff"/><stop offset="1" stop-color="#6c84ff"/></linearGradient>
   <linearGradient id="gG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6dcea"/><stop offset=".55" stop-color="#a5afc8"/><stop offset="1" stop-color="#7d88a6"/></linearGradient>
   <linearGradient id="gD" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4668"/><stop offset="1" stop-color="#1f2a47"/></linearGradient>
-</defs></svg>
+<linearGradient id="gG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0f3fb"/><stop offset="1" stop-color="#bcc5dc"/></linearGradient><linearGradient id="gBd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a60e0"/><stop offset="1" stop-color="#2b3ba8"/></linearGradient><symbol id="logo-icon" viewBox="0 0 120 120"><defs><linearGradient id="lgT" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b78ff"/><stop offset="1" stop-color="#7a3dff"/></linearGradient><linearGradient id="lgF" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff3d81"/><stop offset="1" stop-color="#ff8a3d"/></linearGradient><linearGradient id="lgH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="120" height="120" rx="30" fill="url(#lgT)"/><path d="M78.98 40.72A30 30 0 1 0 78.98 79.28" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M50 44.5v31l26-15.5z" fill="url(#lgF)" stroke="url(#lgF)" stroke-width="6" stroke-linejoin="round"/><ellipse cx="44" cy="20" rx="34" ry="13" fill="url(#lgH)"/><rect x=".75" y=".75" width="118.5" height="118.5" rx="29.5" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/></symbol></defs></svg>
 <div class="app">
 <header class="top">
     <button class="ibtn" id="menuBtn" data-act="menu" aria-label="Menu"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" style="width:3.3rem;height:3.3rem"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-    <div class="logo" data-nav="home" style="cursor:pointer">CINEFLIX</div>
+    <div class="logo" data-nav="home" style="cursor:pointer">CINE<span class="flix">FLIX</span></div>
     <button class="ibtn" id="searchBtn" data-act="search" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" style="width:3.6rem;height:3.6rem"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
     <button class="avatar" id="profileBtn" data-act="profile" aria-label="Profile"><i></i></button>
   </header>
@@ -34,28 +43,30 @@
   <section class="view on" id="view-home">
     <section class="hero" id="hero">
       <div class="hbg" id="hbg"></div>
-      <span class="tag">FEATURED</span>
-      <h1 class="htitle" id="h-title">&nbsp;</h1>
-      <div class="part" id="h-sub"></div>
-      <p class="desc" id="h-desc"></p>
-      <div class="hbtns">
-        <button class="btn primary" id="playBtn" data-act="hero-play"><svg viewBox="0 0 24 24" fill="#fff" style="width:2.2rem;height:2.2rem"><path d="M6 3.8v16.4a1 1 0 001.5.9l13.2-8.2a1 1 0 000-1.8L7.5 2.9A1 1 0 006 3.8z"/></svg>Play Now</button>
-        <button class="btn ghost" id="listBtn" data-act="hero-list"><svg id="list-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:2.2rem;height:2.2rem"><path d="M12 4v16M4 12h16"/></svg><span id="list-txt">My List</span></button>
+      <div class="hin">
+        <span class="tag">FEATURED</span>
+        <h1 class="htitle" id="h-title">&nbsp;</h1>
+        <div class="part" id="h-sub"></div>
+        <p class="desc" id="h-desc"></p>
+        <div class="hbtns">
+          <button class="btn primary" id="playBtn" data-act="hero-play"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6 3.8v16.4a1 1 0 001.5.9l13.2-8.2a1 1 0 000-1.8L7.5 2.9A1 1 0 006 3.8z"/></svg>Play Now</button>
+          <button class="btn ghost" id="listBtn" data-act="hero-list"><svg id="list-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></svg><span id="list-txt">My List</span></button>
+        </div>
       </div>
       <div class="dots" id="h-dots"></div>
     </section>
     <nav class="cats">
-      <button class="cat on" data-cat="movies" data-nav="movies"><span class="ico"><svg viewBox="0 0 48 48"><rect x="5" y="19" width="38" height="24" rx="4" fill="url(#gB)"/><path d="M5.5 11.5L41 5l1.6 8.6L7 20z" fill="url(#gB2)"/><path d="M12 10.4l4.5 7.7M21 8.8l4.5 7.7M30 7.2l4.5 7.7" stroke="#2f43c8" stroke-width="3"/><rect x="5" y="19" width="38" height="5" fill="#8ea0ff"/><path d="M9 28h30" stroke="#fff" stroke-opacity=".25" stroke-width="2"/></svg></span>Movies</button>
-      <button class="cat" data-cat="tv" data-nav="tv"><span class="ico"><svg viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 5l7 7 7-7" stroke="#aab4cb" stroke-width="3"/><rect x="6" y="13" width="36" height="28" rx="6" fill="url(#gD)" stroke="#a5afc8" stroke-width="3"/><rect x="11.5" y="18.5" width="25" height="17" rx="3" fill="#1b2540" stroke="#6f7b9b" stroke-width="1.5"/></svg></span>TV Shows</button>
+      <button class="cat on" data-cat="movies" data-act="home-mode" data-k="movie"><span class="ico"><svg viewBox="0 0 48 48"><rect x="5" y="19" width="38" height="24" rx="4" fill="url(#gB)"/><path d="M5.5 11.5L41 5l1.6 8.6L7 20z" fill="url(#gB2)"/><path d="M12 10.4l4.5 7.7M21 8.8l4.5 7.7M30 7.2l4.5 7.7" stroke="#2f43c8" stroke-width="3"/><rect x="5" y="19" width="38" height="5" fill="#8ea0ff"/><path d="M9 28h30" stroke="#fff" stroke-opacity=".25" stroke-width="2"/></svg></span>Movies</button>
+      <button class="cat" data-cat="tv" data-act="home-mode" data-k="tv"><span class="ico"><svg viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 5l7 7 7-7" stroke="#aab4cb" stroke-width="3"/><rect x="6" y="13" width="36" height="28" rx="6" fill="url(#gD)" stroke="#a5afc8" stroke-width="3"/><rect x="11.5" y="18.5" width="25" height="17" rx="3" fill="#1b2540" stroke="#6f7b9b" stroke-width="1.5"/></svg></span>TV Shows</button>
       <button class="cat" data-cat="genres" data-nav="genres"><span class="ico"><svg viewBox="0 0 48 48"><path d="M5 9c9 3 29 3 38 0v16c0 10-8 17-19 17S5 35 5 25z" fill="url(#gG)"/><path d="M12 22q4.5-4.5 9 0M27 22q4.5-4.5 9 0" stroke="#1b2540" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M15 31q9 7 18 0" stroke="#1b2540" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg></span>Genres</button>
       <button class="cat" data-cat="watchlist" data-nav="watchlist"><span class="ico"><svg viewBox="0 0 48 48"><path d="M12 5h24a3 3 0 013 3v35l-15-9.5L9 43V8a3 3 0 013-3z" fill="url(#gG)"/></svg></span>Watchlist</button>
     </nav>
-    <div class="sec"><h3>Trending Now</h3><button class="sa" data-act="see-trending">See All <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l8 8-8 8"/></svg></button></div>
-    <div class="row" id="trending"></div>
+    <div id="rows-0"></div>
     <div id="continue-section" style="display:none">
       <div class="sec" style="margin-top:4.4rem"><h3>Continue Watching</h3><button class="sa" data-act="see-continue">See All <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l8 8-8 8"/></svg></button></div>
       <div id="continue-list"></div>
     </div>
+    <div id="rows-rest"></div>
   </section>
 
   <!-- GRID PAGES: movies / tv / explore / genres / watchlist / search / history -->
@@ -91,7 +102,7 @@
 </main>
 <footer class="bottom">
     <nav class="nav">
-      <button class="on" data-tab="home" data-nav="home"><span class="ico"><svg viewBox="0 0 48 48"><path d="M24 4L5 19v20a4 4 0 004 4h30a4 4 0 004-4V19z" fill="url(#gB)"/><path d="M24 4L5 19h38z" fill="url(#gB2)"/><rect x="18.5" y="27" width="11" height="16" rx="2.5" fill="#2f43c8"/></svg></span>Home</button>
+      <button class="on" data-tab="home" data-nav="home"><span class="ico"><svg viewBox="0 0 48 48"><path d="M24 4L5 19v20a4 4 0 004 4h30a4 4 0 004-4V19z" fill="url(#gG)"/><path d="M24 4L5 19h38z" fill="url(#gG2)"/><rect x="18.5" y="27" width="11" height="16" rx="2.5" fill="#4a5678"/></svg></span>Home</button>
       <button data-tab="explore" data-nav="explore"><span class="ico"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" fill="url(#gD)" stroke="#a5afc8" stroke-width="3"/><path d="M33 15l-4.5 12L16 33l4.5-12z" fill="url(#gG)"/></svg></span>Explore</button>
       <button data-tab="downloads" data-nav="downloads"><span class="ico"><svg viewBox="0 0 48 48" fill="none" stroke="url(#gG)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5v24M14 20l10 10 10-10"/><path d="M7 32v7a4 4 0 004 4h26a4 4 0 004-4v-7"/></svg></span>Downloads</button>
       <button data-tab="more" data-nav="more"><span class="ico"><svg viewBox="0 0 48 48" fill="url(#gG)"><rect x="6" y="6" width="16" height="16" rx="5.5"/><rect x="26" y="6" width="16" height="16" rx="5.5"/><rect x="6" y="26" width="16" height="16" rx="5.5"/><rect x="26" y="26" width="16" height="16" rx="5.5"/></svg></span>More</button>
@@ -102,7 +113,7 @@
 
 <div class="scrim" id="scrim" data-act="close-drawer"></div>
 <aside class="drawer" id="drawer">
-  <h2>CINEFLIX</h2>
+  <h2>CINE<span class="flix">FLIX</span></h2>
   <button data-nav="home">Home</button><button data-nav="movies">Movies</button><button data-nav="tv">TV Shows</button>
   <button data-nav="genres">Genres</button><button data-nav="watchlist">Watchlist</button><button data-nav="explore">Explore</button>
   <button data-nav="ai">AI Movie Generator</button><button data-nav="more">Settings</button>
@@ -110,12 +121,30 @@
 <div id="kmenu"><button data-act="k-info">Details</button><button data-act="k-remove">Remove</button></div>
 
 <!-- Auth -->
-<div class="modal-overlay" id="auth-modal"><div class="modal">
-  <button class="modal-close" data-act="a-close"><i class="fas fa-times"></i></button>
-  <h2 id="auth-title">Welcome Back</h2><p class="sub" id="auth-subtitle">Sign in to access your library</p>
-  <form id="auth-form"><input id="auth-email" type="email" placeholder="Email" required><input id="auth-password" type="password" placeholder="Password" required minlength="6">
-  <button class="btn primary" id="auth-btn" type="submit"><i class="fas fa-sign-in-alt"></i> Sign In</button></form>
-  <div class="auth-foot"><span id="auth-footer-text">Don't have an account?</span><button id="auth-toggle" data-act="a-toggle">Sign Up</button></div>
+<div class="modal-overlay auth-ov" id="auth-modal"><div class="auth-card">
+  <button class="modal-close" data-act="a-close" aria-label="Close"><i class="fas fa-times"></i></button>
+  <div class="auth-brand"><svg class="lg" viewBox="0 0 120 120"><use href="#logo-icon"/></svg><div class="wordmark">CINE<span class="flix">FLIX</span></div></div>
+
+  <div id="auth-profile" style="display:none">
+    <div class="ap-av" id="ap-av">U</div><h2 style="margin-top:1.6rem">You're signed in</h2><p class="asub" id="ap-mail"></p>
+    <div class="ap-stats"><div><b id="ap-wl">0</b><small>Watchlist</small></div><div><b id="ap-hi">0</b><small>Watched</small></div></div>
+    <button class="btn ghost danger" data-act="a-signout"><i class="fas fa-sign-out-alt"></i> Sign out</button>
+  </div>
+
+  <div id="auth-main">
+    <div class="auth-tabs"><button class="on" data-act="a-mode" data-m="signin">Sign In</button><button data-act="a-mode" data-m="signup">Sign Up</button></div>
+    <h2 id="auth-title">Welcome Back</h2><p class="asub" id="auth-subtitle">Sign in to continue watching on Cineflix</p>
+    <div class="social"><button data-act="a-social" data-p="google"><i class="fab fa-google"></i>Google</button><button data-act="a-social" data-p="github"><i class="fab fa-github"></i>GitHub</button></div>
+    <div class="divider"><span>or continue with email</span></div>
+    <form id="auth-form">
+      <label class="fld"><span>Email</span><div class="inp"><i class="fas fa-envelope"></i><input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" required></div></label>
+      <label class="fld"><span>Password</span><div class="inp"><i class="fas fa-lock"></i><input id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password" required minlength="6"><button type="button" class="eye" data-act="a-eye" aria-label="Show password"><i class="fas fa-eye"></i></button></div></label>
+      <label class="fld" id="fld-confirm" style="display:none"><span>Confirm password</span><div class="inp"><i class="fas fa-shield-halved"></i><input id="auth-confirm" type="password" placeholder="••••••••" autocomplete="new-password" minlength="6"><button type="button" class="eye" data-act="a-eye" aria-label="Show password"><i class="fas fa-eye"></i></button></div></label>
+      <button type="button" class="forgot" id="a-forgot" data-act="a-forgot">Forgot password?</button>
+      <button class="btn primary" id="auth-btn" type="submit"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+    </form>
+    <div class="auth-foot"><span id="auth-footer-text">Don't have an account?</span><button id="auth-toggle" data-act="a-toggle">Sign Up</button></div>
+  </div>
 </div></div>
 
 <!-- Seasons -->
@@ -134,6 +163,12 @@
     <div><span class="player-source-badge" id="player-source-name">2Embed</span><span class="player-source-counter" id="player-source-counter">1 / 15</span></div>
     <div class="player-controls-right"><button class="pbtn" data-act="p-prev"><i class="fas fa-chevron-left"></i> Prev</button><button class="pbtn" data-act="p-next"><i class="fas fa-sync-alt"></i> Switch Source</button><button class="pbtn" data-act="p-full"><i class="fas fa-expand"></i></button></div>
   </div>
+</div></div>
+
+<div class="modal-overlay" id="share-modal"><div class="modal">
+  <button class="modal-close" data-act="sh-close"><i class="fas fa-times"></i></button>
+  <h2>Share</h2><img id="share-img" alt="Share card">
+  <div class="share-grid" id="share-grid"></div>
 </div></div>
 
 <div class="toast-container" id="toast-container"></div>

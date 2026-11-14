@@ -11,15 +11,15 @@ const KEB = '<svg viewBox="0 0 24 24" fill="#cfd6e8"><circle cx="12" cy="4.5" r=
 const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l8 8-8 8"/></svg>';
 
 const FILTERS = {
-  movie: [['trending', 'Trending', '/trending/movie/day'], ['popular', 'Popular', '/movie/popular'], ['now', 'Now Playing', '/movie/now_playing'], ['upcoming', 'Upcoming', '/movie/upcoming'], ['top', 'Top Rated', '/movie/top_rated']],
-  tv: [['trending', 'Trending', '/trending/tv/day'], ['popular', 'Popular', '/tv/popular'], ['air', 'On The Air', '/tv/on_the_air'], ['today', 'Airing Today', '/tv/airing_today'], ['top', 'Top Rated', '/tv/top_rated']]
+  movie: [['trending', 'Trending', '/trending/movie/day'], ['week', 'This Week', '/trending/movie/week'], ['popular', 'Popular', '/movie/popular'], ['now', 'Now Playing', '/movie/now_playing'], ['upcoming', 'Upcoming', '/movie/upcoming'], ['top', 'Top Rated', '/movie/top_rated']],
+  tv: [['trending', 'Trending', '/trending/tv/day'], ['week', 'This Week', '/trending/tv/week'], ['popular', 'Popular', '/tv/popular'], ['air', 'On The Air', '/tv/on_the_air'], ['today', 'Airing Today', '/tv/airing_today'], ['top', 'Top Rated', '/tv/top_rated']]
 };
 const GENRES = { movie: [28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53, 10752, 37], tv: [10759, 16, 35, 80, 99, 18, 10751, 10762, 9648, 10765, 10766, 10768, 37] };
 const TITLES = { movies: 'Movies', tv: 'TV Shows', explore: 'Explore', genres: 'Genres', watchlist: 'Watchlist', search: 'Search', history: 'Continue Watching' };
 
 const INFO = {};                       // cache: "type:id" -> { meta, thumb, runtime }
 const G = { mode: 'movies', type: 'movie', filter: 'trending', genre: null, page: 1, total: 1, q: '' };
-const HERO = { items: [], i: 0, timer: null };
+const HERO = { items: [], i: 0, timer: null, type: 'movie' };
 let CW = [];                           // continue-watching items currently rendered
 
 const metaOf = (m, type) => {
@@ -55,43 +55,61 @@ function setNav(name) { $$('.nav button').forEach(b => b.classList.toggle('on', 
 
 function route() {
   const [a, b] = (location.hash.slice(1) || 'home').split('/');
+  document.title = 'Cineflix'; $('#share-modal')?.classList.remove('active');
   PlayerManager.close(); SeasonManager.hide(); AuthManager.hide(); closeDrawer(); hideKmenu();
   window.scrollTo(0, 0);
-  if (a === 'movie' || a === 'tv') { show('detail'); setNav(''); return showDetail(a, b); }
-  if (['movies', 'tv', 'explore', 'genres', 'watchlist', 'search', 'history'].includes(a)) { show('grid'); setNav(['watchlist', 'history'].includes(a) ? '' : a === 'search' ? 'explore' : 'explore'); return openGrid(a); }
+  if ((a === 'movie' || a === 'tv') && /^\d+$/.test(b || '')) { show('detail'); setNav(''); return showDetail(a, b); }
+  if (['movies', 'tv', 'explore', 'genres', 'watchlist', 'search', 'history'].includes(a)) { show('grid'); setNav(['watchlist', 'history'].includes(a) ? '' : a === 'search' ? 'explore' : 'explore'); return openGrid(a, b); }
   if (a === 'downloads' || a === 'more' || a === 'ai') { show(a); setNav(a === 'ai' ? 'more' : a); if (a === 'more') renderMore(); return; }
   show('home'); setNav('home'); loadHome();
 }
 
 // ---------- home ----------
-let homeLoaded = false;
+const HOME_ROWS = {
+  movie: [['Trending Now', '/trending/movie/day', 'trending'], ['This Week Trending', '/trending/movie/week', 'week'], ['Popular Movies', '/movie/popular', 'popular'], ['Now Playing', '/movie/now_playing', 'now'], ['Top Rated', '/movie/top_rated', 'top']],
+  tv: [['Trending Now', '/trending/tv/day', 'trending'], ['This Week Trending', '/trending/tv/week', 'week'], ['Popular TV Shows', '/tv/popular', 'popular'], ['Now Playing', '/tv/on_the_air', 'air'], ['Top Rated', '/tv/top_rated', 'top']]
+};
+const HOME = { mode: 'movie', done: null, cache: {} };
+const titleOf = m => m.title || m.name || '';
 async function loadHome() {
   renderContinue();
-  if (homeLoaded) return;
-  homeLoaded = true;
-  const [hero, trend] = await Promise.all([TMDB.fetch('/trending/movie/day'), TMDB.fetch('/trending/all/week')]);
-  if (hero?.results) { HERO.items = hero.results.filter(m => m.backdrop_path).slice(0, 5); drawHero(0); startHero(); }
-  if (trend?.results) $('#trending').innerHTML = trend.results.filter(m => m.media_type !== 'person').slice(0, 12).map(m => posterCard(m)).join('');
+  if (HOME.done === HOME.mode) { if (HERO.items.length) startHero(); return; }
+  applyHomeMode();
+}
+async function applyHomeMode() {
+  const m = HOME.mode, rows = HOME_ROWS[m];
+  clearInterval(HERO.timer);
+  $$('.cats .cat').forEach(c => c.classList.toggle('on', c.dataset.cat === (m === 'tv' ? 'tv' : 'movies')));
+  const mk = (r, i) => `<div class="sec"${i ? '' : ' style="margin-top:4.2rem"'}><h3>${r[0]}</h3><button class="sa" data-act="see" data-k="${r[2]}">See All ${CHEV}</button></div><div class="row" id="row-${i}">${'<article class="poster skeleton"></article>'.repeat(5)}</div>`;
+  $('#rows-0').innerHTML = mk(rows[0], 0);
+  $('#rows-rest').innerHTML = rows.slice(1).map((r, i) => mk(r, i + 1)).join('');
+  const data = HOME.cache[m] || await Promise.all(rows.map(r => TMDB.fetch(r[1])));
+  if (HOME.mode !== m) return;
+  if (data.some(Boolean)) { HOME.cache[m] = data; HOME.done = m; }
+  data.forEach((d, i) => { const el = $('#row-' + i); if (el) el.innerHTML = (d?.results || []).filter(x => x.poster_path).slice(0, 14).map(x => posterCard(x, m)).join('') || '<p class="rowerr">Could not load. Check your connection.</p>'; });
+  HERO.items = (data[0]?.results || []).filter(x => x.backdrop_path).slice(0, 5); HERO.type = m;
+  if (HERO.items.length) { drawHero(0); startHero(); }
 }
 function drawHero(i) {
   const m = HERO.items[i]; if (!m) return;
-  HERO.i = i;
+  HERO.i = i; remember(m, HERO.type);
   const bg = $('#hbg'); bg.style.opacity = 0;
   setTimeout(() => { bg.style.backgroundImage = `url(${TMDB.image(m.backdrop_path, 'w1280')})`; bg.style.opacity = 1; }, 220);
-  const t = $('#h-title'); t.textContent = m.title; t.classList.toggle('long', m.title.length > 14);
-  $('#h-sub').textContent = [UI.getYear(m.release_date), (m.genre_ids || []).slice(0, 1).map(UI.getGenreName)[0]].filter(Boolean).join(' • ').toUpperCase();
+  $('#h-title').textContent = titleOf(m);
+  $('#h-sub').textContent = [UI.getYear(m.release_date || m.first_air_date), (m.genre_ids || []).slice(0, 1).map(UI.getGenreName)[0]].filter(Boolean).join(' \u2022 ').toUpperCase();
   $('#h-desc').textContent = m.overview || '';
   $('#h-dots').innerHTML = HERO.items.map((_, k) => `<i class="${k === i ? 'on' : ''}" data-act="dot" data-i="${k}"></i>`).join('');
   updateHeroList();
 }
 function updateHeroList() {
   const m = HERO.items[HERO.i]; if (!m) return;
-  const saved = AppState.isInWatchlist(m.id, 'movie');
+  const saved = AppState.isInWatchlist(m.id, HERO.type);
   $('#list-ico').innerHTML = saved ? '<path d="M5 13l4 4L19 7"/>' : '<path d="M12 4v16M4 12h16"/>';
   $('#list-txt').textContent = saved ? 'In List' : 'My List';
+  $('#listBtn').classList.toggle('saved', saved);
 }
 function startHero() { clearInterval(HERO.timer); HERO.timer = setInterval(() => drawHero((HERO.i + 1) % HERO.items.length), 6000); }
-document.addEventListener('visibilitychange', () => document.hidden ? clearInterval(HERO.timer) : HERO.items.length && startHero());
+document.addEventListener('visibilitychange', () => document.hidden ? clearInterval(HERO.timer) : (HERO.items.length && $('#view-home').classList.contains('on') && startHero()));
 
 function renderContinue() {
   CW = AppState.getContinueWatching();
@@ -108,10 +126,11 @@ function renderContinue() {
 window.HomePage = { renderContinueWatching: () => { if ($('#view-home').classList.contains('on')) renderContinue(); } };
 
 // ---------- grid pages ----------
-function openGrid(mode) {
+function openGrid(mode, f) {
   if (mode === 'movies' || mode === 'tv') { G.type = mode === 'tv' ? 'tv' : 'movie'; G.filter = 'trending'; }
   else if (mode === 'explore' && G.mode !== 'explore') G.filter = 'popular';
   if (mode === 'genres' && G.mode !== 'genres') G.genre = null;
+  if (f && FILTERS[G.type].some(x => x[0] === f)) G.filter = f;
   G.mode = mode; G.page = 1;
   $('#g-title').textContent = TITLES[mode];
   $('#g-search').style.display = mode === 'search' ? 'flex' : 'none';
@@ -192,18 +211,78 @@ async function showDetail(type, id) {
     ${seasons.length ? `<div class="sec sm"><h3>Seasons</h3></div><div class="chips">${seasons.map(s => `<button class="chip" data-act="season" data-n="${s.season_number}">${esc(s.name)}</button>`).join('')}</div>` : ''}
     ${cast.length ? `<div class="sec sm"><h3>Cast</h3></div><div class="row cast">${cast.map(p => `<div class="cc"><img loading="lazy" src="${p.profile_path ? TMDB.image(p.profile_path, 'w200') : ''}" alt="" onerror="this.onerror=null;UI.setImageFallback(this,'avatar')"><h6>${esc(p.name)}</h6><small>${esc(p.character || '')}</small></div>`).join('')}</div>` : ''}
     ${rec.length ? `<div class="sec sm"><h3>More Like This</h3></div><div class="row">${rec.map(m => posterCard(m, type)).join('')}</div>` : ''}`;
-  root.dataset.title = title; root.dataset.poster = posterOf(d);
+  root.dataset.title = title; root.dataset.poster = posterOf(d); root.dataset.desc = d.overview || 'Watch it on Cineflix.'; root.dataset.year = UI.getYear(d.release_date || d.first_air_date) || ''; root.dataset.posterFull = d.poster_path ? TMDB.image(d.poster_path, 'w500') : '';
+  document.title = `${title} • Cineflix`;
   updateDetailList();
 }
 function updateDetailList() {
   const b = $('#d-wl'), c = AppState.currentDetail; if (!b || !c) return;
   const s = AppState.isInWatchlist(c.id, c.type);
+  b.classList.toggle('saved', s);
   b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${s ? '<path d="M5 13l4 4L19 7"/>' : '<path d="M12 4v16M4 12h16"/>'}</svg>${s ? 'In List' : 'My List'}`;
 }
 function toggleList(id, type, title) {
   if (AppState.isInWatchlist(id, type)) { AppState.removeFromWatchlist(id, type); UI.showToast('Removed from watchlist', 'info'); }
   else { AppState.addToWatchlist({ id, type, title }); UI.showToast('Added to watchlist', 'success'); }
   updateHeroList(); updateDetailList();
+}
+
+
+// ---------- share: poster card + app name + title + description ----------
+let SH = {};
+const loadImg = src => new Promise(r => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+const rr = (x, a, b, w, h, r) => { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); };
+const wrapLines = (x, t, maxW) => { const out = []; let line = ''; for (const w of String(t).split(/\s+/)) { const s = line ? line + ' ' + w : w; if (x.measureText(s).width > maxW && line) { out.push(line); line = w; } else line = s; } if (line) out.push(line); return out; };
+function drawLines(x, lines, cx, y, lh, max) { lines.slice(0, max).forEach((l, i) => { if (i === max - 1 && lines.length > max) l = l.replace(/[\s,.;:!?-]+$/, '') + '…'; x.fillText(l, cx, y + i * lh); }); return y + Math.min(lines.length, max) * lh; }
+async function shareCard(title, year, desc, poster) {
+  try {
+    const img = poster ? await loadImg(poster) : null;
+    const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), F = 'Inter,Roboto,Arial,sans-serif';
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#18294f'); g.addColorStop(1, '#0a1124'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.textAlign = 'center'; x.fillStyle = '#fff'; x.font = `600 46px ${F}`;
+    if ('letterSpacing' in x) x.letterSpacing = '16px';
+    x.textAlign = 'right'; x.fillText('CINE', W / 2 + 8, 100); const fg = x.createLinearGradient(W / 2, 60, W / 2 + 230, 100); fg.addColorStop(0, '#ff3d81'); fg.addColorStop(1, '#ff8a3d'); x.fillStyle = fg; x.textAlign = 'left'; x.fillText('FLIX', W / 2 + 8, 100); x.fillStyle = '#fff'; x.textAlign = 'center'; if ('letterSpacing' in x) x.letterSpacing = '0px';
+    const pw = 440, ph = 660, px = (W - pw) / 2, py = 140;
+    x.save(); x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 50; x.shadowOffsetY = 22; rr(x, px, py, pw, ph, 36); x.fillStyle = '#15233f'; x.fill(); x.restore();
+    if (img) { x.save(); rr(x, px, py, pw, ph, 36); x.clip(); x.drawImage(img, px, py, pw, ph); x.restore(); }
+    let y = py + ph + 105;
+    x.fillStyle = '#fff'; x.font = `700 58px ${F}`;
+    y = drawLines(x, wrapLines(x, title, 940), W / 2, y, 68, 2);
+    x.fillStyle = '#8fa0ff'; x.font = `500 32px ${F}`; if (year) { x.fillText(year, W / 2, y - 8); } y += 34;
+    x.fillStyle = '#b9c4dc'; x.font = `400 33px ${F}`;
+    drawLines(x, wrapLines(x, desc, 900), W / 2, y, 47, 4);
+    x.fillStyle = '#6a82ff'; x.font = `600 30px ${F}`; x.fillText('Watch now on Cineflix', W / 2, 1302);
+    return await new Promise(r => c.toBlob(r, 'image/png'));
+  } catch (e) { return null; }
+}
+async function shareTitle() {
+  const r = $('#detail'), { title, year, desc, posterFull } = r.dataset, url = location.href;
+  if (!title) return;
+  const short = desc.length > 220 ? desc.slice(0, 217).trim() + '…' : desc;
+  const text = `🎬 ${title}${year ? ` (${year})` : ''} — on Cineflix\n\n${short}\n\nWatch now: ${url}`;
+  UI.showToast('Preparing share card…', 'info', 1500);
+  const blob = await shareCard(title, year, desc, posterFull);
+  SH = { blob, text, url, title };
+  const file = blob && new File([blob], title.replace(/[^\w]+/g, '-') + '.png', { type: 'image/png' });
+  try {
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) return await navigator.share({ title: `${title} • Cineflix`, text, files: [file] });
+    if (navigator.share && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)) return await navigator.share({ title: `${title} • Cineflix`, text });
+  } catch (e) { if (e.name === 'AbortError') return; }
+  openShare();
+}
+function openShare() {
+  const q = encodeURIComponent, { text, url, title } = SH;
+  $('#share-img').src = SH.blob ? URL.createObjectURL(SH.blob) : $('#detail').dataset.posterFull;
+  $('#share-grid').innerHTML = `
+    <a href="https://wa.me/?text=${q(text)}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i>WhatsApp</a>
+    <a href="https://t.me/share/url?url=${q(url)}&text=${q(text.split('\n\n')[0] + '\n' + (text.split('\n\n')[1] || ''))}" target="_blank" rel="noopener"><i class="fab fa-telegram"></i>Telegram</a>
+    <a href="https://twitter.com/intent/tweet?text=${q(`${title} on Cineflix`)}&url=${q(url)}" target="_blank" rel="noopener"><i class="fab fa-x-twitter"></i>X</a>
+    <a href="https://www.facebook.com/sharer/sharer.php?u=${q(url)}" target="_blank" rel="noopener"><i class="fab fa-facebook"></i>Facebook</a>
+    <a href="mailto:?subject=${q(title + ' • Cineflix')}&body=${q(text)}"><i class="fas fa-envelope"></i>Email</a>
+    <button data-act="copy-text"><i class="fas fa-copy"></i>Copy</button>
+    ${SH.blob ? '<button data-act="dl-card"><i class="fas fa-image"></i>Save image</button>' : ''}`;
+  $('#share-modal').classList.add('active');
 }
 
 // ---------- player + continue-watching progress ----------
@@ -262,9 +341,15 @@ function act(name, el) {
     case 'search': return nav('search');
     case 'profile': return AuthManager.show();
     case 'dot': drawHero(+d.i); return startHero();
-    case 'hero-play': return h && PlayerManager.open(h.id, 'movie', h.title, null, null, posterOf(h));
-    case 'hero-list': return h && toggleList(h.id, 'movie', h.title);
-    case 'see-trending': return nav('movies');
+    case 'hero-play': return h && PlayerManager.open(h.id, HERO.type, titleOf(h), null, null, posterOf(h));
+    case 'hero-list': return h && toggleList(h.id, HERO.type, titleOf(h));
+    case 'see': return nav((HOME.mode === 'tv' ? 'tv' : 'movies') + '/' + d.k);
+    case 'home-mode': if (HOME.mode === d.k) return; HOME.mode = d.k; HOME.done = null; HERO.items = []; return applyHomeMode();
+    case 'a-mode': return AuthManager.setMode(d.m);
+    case 'a-eye': { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; el.innerHTML = `<i class="fas fa-eye${i.type === 'password' ? '' : '-slash'}"></i>`; return; }
+    case 'a-forgot': { const em = $('#auth-email').value.trim(); if (!FirebaseManager.initialized) return UI.showToast('Please configure Firebase first', 'error'); if (!em) { UI.showToast('Enter your email above first', 'warning'); return $('#auth-email').focus(); } return firebase.auth().sendPasswordResetEmail(em).then(() => UI.showToast('Password reset email sent', 'success')).catch(x => UI.showToast(x.message, 'error')); }
+    case 'a-social': { if (!FirebaseManager.initialized) return UI.showToast('Please configure Firebase first', 'error'); const p = d.p === 'google' ? new firebase.auth.GoogleAuthProvider() : new firebase.auth.GithubAuthProvider(); return firebase.auth().signInWithPopup(p).then(() => { UI.showToast('Welcome to Cineflix!', 'success'); AuthManager.hide(); }).catch(x => UI.showToast(x.message, 'error')); }
+    case 'a-signout': return FirebaseManager.signOut().then(() => { UI.showToast('Signed out successfully', 'info'); AuthManager.hide(); });
     case 'see-continue': return nav('history');
     case 'chip': G.filter = d.k; G.page = 1; renderChips(); return loadGrid(true);
     case 'genre': G.genre = d.k; G.page = 1; renderChips(); return loadGrid(true);
@@ -273,7 +358,11 @@ function act(name, el) {
     case 'back': return history.length > 1 ? history.back() : nav('home');
     case 'd-play': { const c = AppState.currentDetail, r = $('#detail'); return PlayerManager.open(c.id, c.type, r.dataset.title, null, null, r.dataset.poster); }
     case 'd-list': { const c = AppState.currentDetail; return toggleList(c.id, c.type, $('#detail').dataset.title); }
-    case 'd-share': { const u = location.href, t = $('#detail').dataset.title; return navigator.share ? navigator.share({ title: t, url: u }).catch(() => { }) : navigator.clipboard.writeText(u).then(() => UI.showToast('Link copied to clipboard!', 'success')); }
+    case 'd-share': return shareTitle();
+    case 'sh-close': return $('#share-modal').classList.remove('active');
+    case 'copy-text': return navigator.clipboard.writeText(SH.text).then(() => UI.showToast('Copied to clipboard!', 'success'));
+    case 'dl-card': { if (!SH.blob) return UI.showToast('Image not available', 'warning'); const a = document.createElement('a'); a.href = URL.createObjectURL(SH.blob); a.download = (SH.title || 'cineflix').replace(/[^\w]+/g, '-') + '.png'; a.click(); return; }
+    case 'd-share-old': { const u = location.href, t = $('#detail').dataset.title; return navigator.share ? navigator.share({ title: t, url: u }).catch(() => { }) : navigator.clipboard.writeText(u).then(() => UI.showToast('Link copied to clipboard!', 'success')); }
     case 'season': return TMDB.fetch(`/tv/${AppState.currentDetail.id}/season/${d.n}`).then(s => s && SeasonManager.show(+d.n, s, AppState.currentDetail.id, ($('#detail').dataset.title || '').replace(/['"\\]/g, '')));
     case 'kebab': return showKmenu(el, +d.i);
     case 'k-remove': { const it = CW[kIndex]; if (it) { AppState.removeFromHistory(it.id, it.type, it.season, it.episode); renderContinue(); } return hideKmenu(); }
@@ -324,12 +413,35 @@ AuthManager.updateUI = function () {
   if (i) { i.textContent = u ? (u.displayName || u.email || 'U').charAt(0).toUpperCase() : ''; i.classList.toggle('init', !!u); }
   renderMoreIfOpen();
 };
-$('#auth-form')?.addEventListener('submit', e => AuthManager.handleSubmit(e));
+AuthManager.setMode = function (mode) {
+  this.mode = mode; const si = mode === 'signin';
+  $('#auth-title').textContent = si ? 'Welcome Back' : 'Create Account';
+  $('#auth-subtitle').textContent = si ? 'Sign in to continue watching on Cineflix' : 'Join Cineflix and start streaming today';
+  $('#auth-btn').innerHTML = si ? '<i class="fas fa-sign-in-alt"></i> Sign In' : '<i class="fas fa-user-plus"></i> Create Account';
+  $('#auth-footer-text').textContent = si ? "Don't have an account?" : 'Already have an account?';
+  $('#auth-toggle').textContent = si ? 'Sign Up' : 'Sign In';
+  $('#fld-confirm').style.display = si ? 'none' : 'block';
+  $('#a-forgot').style.display = si ? 'block' : 'none';
+  $('#auth-password').autocomplete = si ? 'current-password' : 'new-password';
+  $$('.auth-tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === mode));
+};
+AuthManager.show = function () {
+  const u = AppState.currentUser;
+  $('#auth-profile').style.display = u ? 'block' : 'none';
+  $('#auth-main').style.display = u ? 'none' : 'block';
+  if (u) { const n = u.displayName || u.email || 'U'; $('#ap-av').textContent = n.charAt(0).toUpperCase(); $('#ap-mail').textContent = u.email || n; $('#ap-wl').textContent = AppState.watchlist.length; $('#ap-hi').textContent = AppState.watchHistory.length; }
+  else this.setMode('signin');
+  UI.showModal('auth-modal');
+};
+$('#auth-form')?.addEventListener('submit', e => {
+  if (AuthManager.mode === 'signup' && $('#auth-confirm').value !== $('#auth-password').value) { e.preventDefault(); return UI.showToast('Passwords do not match', 'error'); }
+  AuthManager.handleSubmit(e);
+});
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { AuthManager.hide(); PlayerManager.close(); SeasonManager.hide(); closeDrawer(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); nav('search'); }
 });
-$$('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) { AuthManager.hide(); SeasonManager.hide(); PlayerManager.close(); } }));
+$$('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) { o.id === 'share-modal' && o.classList.remove('active'); AuthManager.hide(); SeasonManager.hide(); PlayerManager.close(); } }));
 $('#ai-prompt')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); act('ai-go'); } });
 
 // boot
@@ -339,3 +451,10 @@ document.addEventListener('DOMContentLoaded', () => {
   route();
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => { });
 });
+
+// ---------- splash screen: 8 seconds ----------
+(() => {
+  const s = $('#splash'); if (!s) return;
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => { s.classList.add('hide'); document.body.style.overflow = ''; setTimeout(() => s.remove(), 800); }, 8000);
+})();
